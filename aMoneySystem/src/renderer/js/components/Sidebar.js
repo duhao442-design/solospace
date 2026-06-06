@@ -99,6 +99,10 @@ export default {
           <el-icon><User /></el-icon>
           <template #title>家庭管理</template>
         </el-menu-item>
+        <el-menu-item index="/account-management" @click="navigateTo('/account-management')">
+          <el-icon><Wallet /></el-icon>
+          <template #title>账户管理</template>
+        </el-menu-item>
         <el-menu-item index="/add-bill" @click="navigateTo('/add-bill')">
           <el-icon><Plus /></el-icon>
           <template #title>新增账单</template>

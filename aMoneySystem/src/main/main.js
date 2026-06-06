@@ -113,3 +113,43 @@ ipcMain.handle('data:clear', async () => {
   }
   return false;
 });
+
+ipcMain.handle('account:list', async (event, type) => {
+  return db.getAccounts(type);
+});
+
+ipcMain.handle('account:get', async (event, id) => {
+  return db.getAccountById(id);
+});
+
+ipcMain.handle('account:add', async (event, account) => {
+  return db.addAccount(account);
+});
+
+ipcMain.handle('account:update', async (event, id, account) => {
+  return db.updateAccount(id, account);
+});
+
+ipcMain.handle('account:delete', async (event, id) => {
+  return db.deleteAccount(id);
+});
+
+ipcMain.handle('account:totalBalance', async (event, type) => {
+  return db.getTotalBalance(type);
+});
+
+ipcMain.handle('account:netWorth', async () => {
+  return db.getNetWorth();
+});
+
+ipcMain.handle('account:balanceHistory', async (event, type, startDate, endDate) => {
+  return db.getBalanceHistory(type, startDate, endDate);
+});
+
+ipcMain.handle('transaction:add', async (event, transaction, tags) => {
+  return db.addTransaction(transaction, tags);
+});
+
+ipcMain.handle('transaction:delete', async (event, id) => {
+  return db.deleteTransaction(id);
+});

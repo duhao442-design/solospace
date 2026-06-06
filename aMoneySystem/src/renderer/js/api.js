@@ -1,5 +1,7 @@
 const db = window.electronAPI.db;
 const dataApi = window.electronAPI.data;
+const accountApi = window.electronAPI.account;
+const transactionApi = window.electronAPI.transaction;
 
 export default {
   async getFamilies() {
@@ -91,20 +93,7 @@ export default {
   },
   
   async addTransaction(transaction, tags = []) {
-    const result = await db.run(
-      'INSERT INTO transactions (amount, type, creator_id, family_id, is_family_expense, description, transaction_date) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [transaction.amount, transaction.type, transaction.creator_id, transaction.family_id, transaction.is_family_expense ? 1 : 0, transaction.description, transaction.transaction_date]
-    );
-    
-    const transactionId = result.lastInsertRowid;
-    for (const tag of tags) {
-      await db.run(
-        'INSERT INTO transaction_tags (transaction_id, tag_type_id, tag_value_id) VALUES (?, ?, ?)',
-        [transactionId, tag.tag_type_id, tag.tag_value_id]
-      );
-    }
-    
-    return result;
+    return await transactionApi.add(transaction, tags);
   },
   
   async getTransactions(startDate = null, endDate = null, type = null, limit = null) {
@@ -158,8 +147,7 @@ export default {
   },
   
   async deleteTransaction(id) {
-    await db.run('DELETE FROM transaction_tags WHERE transaction_id = ?', [id]);
-    return await db.run('DELETE FROM transactions WHERE id = ?', [id]);
+    return await transactionApi.remove(id);
   },
   
   async getTotalByType(type, startDate = null, endDate = null) {
@@ -213,5 +201,37 @@ export default {
   
   async clearData() {
     return await dataApi.clear();
+  },
+
+  async getAccounts(type = null) {
+    return await accountApi.list(type);
+  },
+
+  async getAccount(id) {
+    return await accountApi.get(id);
+  },
+
+  async addAccount(account) {
+    return await accountApi.add(account);
+  },
+
+  async updateAccount(id, account) {
+    return await accountApi.update(id, account);
+  },
+
+  async deleteAccount(id) {
+    return await accountApi.remove(id);
+  },
+
+  async getTotalBalance(type) {
+    return await accountApi.totalBalance(type);
+  },
+
+  async getNetWorth() {
+    return await accountApi.netWorth();
+  },
+
+  async getBalanceHistory(type, startDate, endDate) {
+    return await accountApi.balanceHistory(type, startDate, endDate);
   }
 };

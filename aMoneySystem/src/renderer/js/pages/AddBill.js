@@ -7,6 +7,7 @@ export default {
       form: {
         amount: null,
         type: 'expense',
+        account_id: null,
         creator_id: null,
         family_id: null,
         is_family_expense: false,
@@ -15,6 +16,8 @@ export default {
       },
       families: [],
       members: [],
+      assetAccounts: [],
+      liabilityAccounts: [],
       tagTypes: [],
       tagValuesMap: {},
       selectedTags: {},
@@ -23,9 +26,17 @@ export default {
   },
   mounted() {
     this.loadFamilies();
+    this.loadAccounts();
     this.loadTagTypes();
   },
   methods: {
+    async loadAccounts() {
+      this.assetAccounts = await api.getAccounts('asset');
+      this.liabilityAccounts = await api.getAccounts('liability');
+      if (this.assetAccounts.length > 0) {
+        this.form.account_id = this.assetAccounts[0].id;
+      }
+    },
     async loadFamilies() {
       this.families = await api.getFamilies();
       if (this.families.length > 0) {
@@ -60,9 +71,21 @@ export default {
       this.loadMembers();
     },
     
+    onTypeChange() {
+      if (this.form.type === 'income' && this.assetAccounts.length > 0) {
+        this.form.account_id = this.assetAccounts[0].id;
+      } else if (this.form.type === 'expense' && this.assetAccounts.length > 0) {
+        this.form.account_id = this.assetAccounts[0].id;
+      }
+    },
+    
     async submit() {
       if (!this.form.amount || this.form.amount <= 0) {
         ElementPlus.ElMessage.warning('请输入有效金额');
+        return;
+      }
+      if (!this.form.account_id) {
+        ElementPlus.ElMessage.warning('请选择账户');
         return;
       }
       if (!this.form.creator_id) {
@@ -96,6 +119,7 @@ export default {
       this.form = {
         amount: null,
         type: 'expense',
+        account_id: this.assetAccounts.length > 0 ? this.assetAccounts[0].id : null,
         creator_id: this.members.length > 0 ? this.members[0].id : null,
         family_id: this.families.length > 0 ? this.families[0].id : null,
         is_family_expense: false,
@@ -135,7 +159,7 @@ export default {
           <div class="form-row">
             <div class="form-col">
               <el-form-item label="账单类型">
-                <el-radio-group v-model="form.type" size="large">
+                <el-radio-group v-model="form.type" size="large" @change="onTypeChange">
                   <el-radio-button label="expense">支出</el-radio-button>
                   <el-radio-button label="income">收入</el-radio-button>
                 </el-radio-group>
@@ -157,6 +181,33 @@ export default {
           
           <div class="form-row">
             <div class="form-col">
+              <el-form-item label="账户">
+                <el-select 
+                  v-model="form.account_id" 
+                  placeholder="请选择账户" 
+                  size="large"
+                  style="width: 100%"
+                >
+                  <el-option-group label="资产账户" v-if="form.type === 'income' || form.type === 'expense'">
+                    <el-option 
+                      v-for="account in assetAccounts" 
+                      :key="account.id" 
+                      :label="account.name + ' (¥' + Number(account.balance).toFixed(2) + ')'" 
+                      :value="account.id" 
+                    />
+                  </el-option-group>
+                  <el-option-group label="负债账户" v-if="form.type === 'expense'">
+                    <el-option 
+                      v-for="account in liabilityAccounts" 
+                      :key="account.id" 
+                      :label="account.name + ' (¥' + Number(account.balance).toFixed(2) + ')'" 
+                      :value="account.id" 
+                    />
+                  </el-option-group>
+                </el-select>
+              </el-form-item>
+            </div>
+            <div class="form-col">
               <el-form-item label="日期">
                 <el-date-picker
                   v-model="form.transaction_date"
@@ -168,6 +219,9 @@ export default {
                 />
               </el-form-item>
             </div>
+          </div>
+          
+          <div class="form-row">
             <div class="form-col">
               <el-form-item label="所属家庭">
                 <el-select 
@@ -186,9 +240,6 @@ export default {
                 </el-select>
               </el-form-item>
             </div>
-          </div>
-          
-          <div class="form-row">
             <div class="form-col">
               <el-form-item label="记账人">
                 <el-select 
@@ -206,7 +257,10 @@ export default {
                 </el-select>
               </el-form-item>
             </div>
-            <div class="form-col">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-col" style="grid-column: span 2;">
               <el-form-item label="家庭支出">
                 <el-switch v-model="form.is_family_expense" />
                 <span style="margin-left: 10px; color: #909399;">标记为家庭共同支出</span>

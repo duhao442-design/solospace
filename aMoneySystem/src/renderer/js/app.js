@@ -6,6 +6,7 @@ import Home from './pages/Home.js';
 import AllBills from './pages/AllBills.js';
 import MonthlyAnalysis from './pages/MonthlyAnalysis.js';
 import FamilyManagement from './pages/FamilyManagement.js';
+import AccountManagement from './pages/AccountManagement.js';
 import AddBill from './pages/AddBill.js';
 import SystemSettings from './pages/SystemSettings.js';
 
@@ -14,6 +15,7 @@ const routes = [
   { path: '/all-bills', component: AllBills, meta: { title: '全部账单' } },
   { path: '/monthly-analysis', component: MonthlyAnalysis, meta: { title: '每月收支分析' } },
   { path: '/family-management', component: FamilyManagement, meta: { title: '家庭管理' } },
+  { path: '/account-management', component: AccountManagement, meta: { title: '账户管理' } },
   { path: '/add-bill', component: AddBill, meta: { title: '新增账单' } },
   { path: '/system-settings', component: SystemSettings, meta: { title: '系统管理' } }
 ];
