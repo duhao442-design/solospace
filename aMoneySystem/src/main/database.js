@@ -211,41 +211,47 @@ class AppDatabase {
   }
 
   run(sql, params = []) {
-    this.db.run(sql, params);
-    const lastIdResult = this.db.exec('SELECT last_insert_rowid() as id, changes() as changes');
-    const lastInsertRowid = lastIdResult[0].values[0][0];
-    const changes = lastIdResult[0].values[0][1];
+    const stmt = this.db.prepare(sql);
+    if (params && params.length > 0) {
+      stmt.bind(params);
+    }
+    stmt.step();
+    stmt.free();
+    
+    const lastIdStmt = this.db.prepare('SELECT last_insert_rowid() as id, changes() as changes');
+    lastIdStmt.step();
+    const result = lastIdStmt.getAsObject();
+    lastIdStmt.free();
+    
     this.save();
-    return { lastInsertRowid, changes };
+    return { lastInsertRowid: result.id, changes: result.changes };
   }
 
   get(sql, params = []) {
-    const result = this.db.exec(sql, params);
-    if (result.length === 0 || result[0].values.length === 0) {
-      return undefined;
+    const stmt = this.db.prepare(sql);
+    if (params && params.length > 0) {
+      stmt.bind(params);
     }
-    const columns = result[0].columns;
-    const values = result[0].values[0];
-    const row = {};
-    columns.forEach((col, i) => {
-      row[col] = values[i];
-    });
-    return row;
+    const result = {};
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      Object.assign(result, row);
+    }
+    stmt.free();
+    return Object.keys(result).length > 0 ? result : undefined;
   }
 
   all(sql, params = []) {
-    const result = this.db.exec(sql, params);
-    if (result.length === 0) {
-      return [];
+    const stmt = this.db.prepare(sql);
+    if (params && params.length > 0) {
+      stmt.bind(params);
     }
-    const columns = result[0].columns;
-    return result[0].values.map(row => {
-      const obj = {};
-      columns.forEach((col, i) => {
-        obj[col] = row[i];
-      });
-      return obj;
-    });
+    const results = [];
+    while (stmt.step()) {
+      results.push(stmt.getAsObject());
+    }
+    stmt.free();
+    return results;
   }
 
   addAccount(account) {

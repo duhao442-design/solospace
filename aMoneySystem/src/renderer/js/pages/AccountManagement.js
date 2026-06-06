@@ -182,11 +182,10 @@ export default {
           <el-form-item label="账户名称">
             <el-input v-model="accountDialog.form.name" placeholder="请输入账户名称" />
           </el-form-item>
-          <el-form-item label="账户类型" v-if="!accountDialog.isEdit">
-            <el-radio-group v-model="accountDialog.form.type">
-              <el-radio value="asset">资产</el-radio>
-              <el-radio value="liability">负债</el-radio>
-            </el-radio-group>
+          <el-form-item label="账户类型">
+            <el-tag :type="accountDialog.form.type === 'asset' ? 'success' : 'danger'">
+              {{ accountDialog.form.type === 'asset' ? '资产账户' : '负债账户' }}
+            </el-tag>
           </el-form-item>
           <el-form-item label="初始余额">
             <el-input-number v-model="accountDialog.form.initial_balance" :min="0" :precision="2" style="width: 100%" />
