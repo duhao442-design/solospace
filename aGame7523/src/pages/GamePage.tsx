@@ -173,6 +173,7 @@ export const GamePage: React.FC = () => {
           canPass={canPass()}
           onHint={handleHint}
           disabled={!isHumanTurn || isProcessing || isGameOver}
+          selectedCount={selectedCards.length}
         />
       </div>
 
