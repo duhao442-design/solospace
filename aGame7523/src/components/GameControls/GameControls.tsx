@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, SkipForward, Lightbulb, RotateCcw, X } from 'lucide-react';
+import { message } from 'antd';
 import { useGameStore } from '@/store/gameStore';
 
 interface GameControlsProps {
@@ -8,6 +9,7 @@ interface GameControlsProps {
   canPass: boolean;
   onHint: () => void;
   disabled?: boolean;
+  selectedCount: number;
 }
 
 export const GameControls: React.FC<GameControlsProps> = ({
@@ -15,23 +17,37 @@ export const GameControls: React.FC<GameControlsProps> = ({
   canPass,
   onHint,
   disabled = false,
+  selectedCount = 0,
 }) => {
   const { playCards, pass, clearSelection, resetGame } = useGameStore();
+  const [messageApi, contextHolder] = message.useMessage();
 
   const handlePlay = () => {
-    if (canPlay && !disabled) {
-      playCards();
+    if (disabled) return;
+    if (selectedCount === 0) {
+      messageApi.warning('请先选择要出的牌');
+      return;
+    }
+    const success = playCards();
+    if (!success) {
+      messageApi.error('牌型不合法或无法压过对方的牌');
     }
   };
 
   const handlePass = () => {
-    if (canPass && !disabled) {
-      pass();
+    if (!canPass || disabled) {
+      if (!canPass) {
+        messageApi.info('首轮出牌不能不出');
+      }
+      return;
     }
+    pass();
   };
 
   return (
-    <div className="flex items-center justify-center gap-4 py-4">
+    <>
+      {contextHolder}
+      <div className="flex items-center justify-center gap-4 py-4">
       <motion.button
         whileHover={!disabled ? { scale: 1.05 } : {}}
         whileTap={!disabled ? { scale: 0.95 } : {}}
@@ -78,18 +94,25 @@ export const GameControls: React.FC<GameControlsProps> = ({
       </motion.button>
 
       <motion.button
-        whileHover={!disabled && canPlay ? { scale: 1.05 } : {}}
-        whileTap={!disabled && canPlay ? { scale: 0.95 } : {}}
+        whileHover={!disabled && selectedCount > 0 ? { scale: 1.05 } : {}}
+        whileTap={!disabled && selectedCount > 0 ? { scale: 0.95 } : {}}
         onClick={handlePlay}
         className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-lg transition-all ${
-          !canPlay || disabled
+          disabled || selectedCount === 0
             ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-            : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-400 hover:to-green-500 shadow-lg shadow-green-500/30'
+            : canPlay
+              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-400 hover:to-green-500 shadow-lg shadow-green-500/30'
+              : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-400 hover:to-orange-500 shadow-lg shadow-orange-500/30'
         }`}
-        disabled={!canPlay || disabled}
+        disabled={disabled || selectedCount === 0}
       >
         <Play size={20} />
         出牌
+        {selectedCount > 0 && (
+          <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-sm">
+            {selectedCount}张
+          </span>
+        )}
       </motion.button>
 
       <motion.button
@@ -102,5 +125,6 @@ export const GameControls: React.FC<GameControlsProps> = ({
         重开
       </motion.button>
     </div>
+    </>
   );
 };

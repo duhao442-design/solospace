@@ -18,29 +18,42 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   const { selectedCards, selectCard } = useGameStore();
 
   const cardCount = cards.length;
-  const spreadAngle = Math.min(cardCount * 3, 35);
-  const startAngle = -spreadAngle / 2;
+  const cardWidth = 60;
+  const visibleWidth = 36;
+  const totalWidth = (cardCount - 1) * visibleWidth + cardWidth;
 
   return (
-    <div className="relative flex items-end justify-center h-40">
+    <div 
+      className="relative h-36 mx-auto"
+      style={{ width: `${totalWidth}px` }}
+    >
       {cards.map((card, index) => {
-        const angle = startAngle + (spreadAngle / (cardCount - 1 || 1)) * index;
-        const yOffset = Math.abs(angle) * 0.2;
         const isSelected = selectedCards.includes(card.id);
+        const left = index * visibleWidth;
 
         return (
           <motion.div
             key={card.id}
-            className="absolute"
+            className="absolute cursor-pointer"
             style={{
-              transform: `rotate(${angle}deg) translateY(${yOffset}px)`,
-              transformOrigin: 'bottom center',
-              marginLeft: `${index * -10}px`,
-              zIndex: index,
+              left: `${left}px`,
+              bottom: 0,
+              zIndex: isSelected ? 100 : index,
             }}
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+            initial={{ opacity: 0, y: 60, scale: 0.9 }}
+            animate={{
+              opacity: 1,
+              y: isSelected ? -28 : 0,
+              scale: 1,
+            }}
+            transition={{
+              delay: index * 0.04,
+              duration: 0.25,
+            }}
+            whileHover={isCurrentPlayer && !disabled ? {
+              y: isSelected ? -36 : -12,
+              zIndex: 99,
+            } : {}}
           >
             <CardComponent
               card={card}
