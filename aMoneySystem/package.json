@@ -20,11 +20,7 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
-    "echarts": "^5.4.3",
-    "element-plus": "^2.4.4",
-    "vue": "^3.4.0",
-    "vue-router": "^4.2.5"
+    "sql.js": "^1.14.1"
   },
   "build": {
     "appId": "com.amoneysystem.app",

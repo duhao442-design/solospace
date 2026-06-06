@@ -26,9 +26,14 @@ function createWindow() {
   mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
-  db = new Database();
-  db.init();
+app.whenReady().then(async () => {
+  try {
+    db = new Database();
+    await db.init();
+    console.log('Database initialized successfully');
+  } catch (e) {
+    console.error('Failed to initialize database:', e);
+  }
   createWindow();
 
   app.on('activate', () => {
@@ -42,6 +47,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
 });
 
 ipcMain.handle('db:query', async (event, sql, params = []) => {
@@ -69,7 +78,7 @@ ipcMain.handle('data:export', async () => {
 
   if (result.canceled) return null;
 
-  const data = db.exportAllData();
+  const data = await db.exportAllData();
   fs.writeFileSync(result.filePath, JSON.stringify(data, null, 2));
   return result.filePath;
 });
@@ -85,7 +94,7 @@ ipcMain.handle('data:import', async () => {
 
   const content = fs.readFileSync(result.filePaths[0], 'utf-8');
   const data = JSON.parse(content);
-  db.importAllData(data);
+  await db.importAllData(data);
   return true;
 });
 
@@ -99,7 +108,7 @@ ipcMain.handle('data:clear', async () => {
   });
 
   if (result.response === 1) {
-    db.clearAllData();
+    await db.clearAllData();
     return true;
   }
   return false;
