@@ -10,7 +10,7 @@ interface PlayAreaProps {
 
 export const PlayArea: React.FC<PlayAreaProps> = ({ lastPlay, message }) => {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <AnimatePresence>
         {message && (
           <motion.div
@@ -18,14 +18,14 @@ export const PlayArea: React.FC<PlayAreaProps> = ({ lastPlay, message }) => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="mb-4 px-6 py-2 bg-black/50 rounded-full text-white font-bold text-lg"
+            className="mb-6 px-8 py-3 bg-black/60 rounded-full text-white font-bold text-xl backdrop-blur-sm"
           >
             {message}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="relative w-80 h-32 flex items-center justify-center">
+      <div className="relative flex items-center justify-center">
         <AnimatePresence mode="wait">
           {lastPlay && (
             <motion.div
@@ -38,11 +38,12 @@ export const PlayArea: React.FC<PlayAreaProps> = ({ lastPlay, message }) => {
               {lastPlay.cards.map((card, index) => (
                 <motion.div
                   key={card.id}
-                  initial={{ x: -50 * index, rotate: -10 }}
-                  animate={{ x: -20 * index, rotate: 0 }}
+                  initial={{ x: -60 * index, rotate: -10 }}
+                  animate={{ x: -25 * index, rotate: 0 }}
                   transition={{ delay: index * 0.1 }}
+                  style={{ marginLeft: index === 0 ? 0 : -10 }}
                 >
-                  <CardComponent card={card} size="medium" disabled />
+                  <CardComponent card={card} size="large" disabled />
                 </motion.div>
               ))}
             </motion.div>
@@ -54,7 +55,7 @@ export const PlayArea: React.FC<PlayAreaProps> = ({ lastPlay, message }) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-2 px-4 py-1 bg-yellow-400/80 rounded-full text-sm font-bold text-gray-900"
+          className="mt-4 px-5 py-1.5 bg-yellow-400/90 rounded-full text-base font-bold text-gray-900"
         >
           {getPlayTypeName(lastPlay.type)}
         </motion.div>

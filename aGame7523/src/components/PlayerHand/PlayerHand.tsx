@@ -18,14 +18,14 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   const { selectedCards, selectCard } = useGameStore();
 
   const cardCount = cards.length;
-  const spreadAngle = Math.min(cardCount * 4, 60);
+  const spreadAngle = Math.min(cardCount * 3, 35);
   const startAngle = -spreadAngle / 2;
 
   return (
-    <div className="relative flex items-end justify-center h-36">
+    <div className="relative flex items-end justify-center h-40">
       {cards.map((card, index) => {
         const angle = startAngle + (spreadAngle / (cardCount - 1 || 1)) * index;
-        const yOffset = Math.abs(angle) * 0.3;
+        const yOffset = Math.abs(angle) * 0.2;
         const isSelected = selectedCards.includes(card.id);
 
         return (
@@ -35,7 +35,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
             style={{
               transform: `rotate(${angle}deg) translateY(${yOffset}px)`,
               transformOrigin: 'bottom center',
-              marginLeft: `${index * -20}px`,
+              marginLeft: `${index * -10}px`,
               zIndex: index,
             }}
             initial={{ opacity: 0, y: 50 }}
