@@ -16,7 +16,6 @@ spring:
     time-zone: GMT+8
 
 mybatis-plus:
-  mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.ba.ipmanage.entity
   configuration:
     map-underscore-to-camel-case: true
@@ -24,9 +23,6 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
 
 ip:
   check:

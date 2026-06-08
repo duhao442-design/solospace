@@ -22,6 +22,7 @@
         <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
         <hutool.version>5.8.22</hutool.version>
         <fastjson.version>2.0.40</fastjson.version>
+        <mysql.version>8.0.33</mysql.version>
     </properties>
 
     <dependencies>
@@ -44,6 +45,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql.version}</version>
         </dependency>
 
         <dependency>
