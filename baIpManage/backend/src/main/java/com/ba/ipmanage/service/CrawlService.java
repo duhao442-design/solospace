@@ -1,6 +1,7 @@
 package com.ba.ipmanage.service;
 
 import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ba.ipmanage.entity.CrawlSource;
 import com.ba.ipmanage.entity.PendingProxyIp;
@@ -9,6 +10,8 @@ import com.ba.ipmanage.mapper.CrawlSourceMapper;
 import com.ba.ipmanage.mapper.PendingProxyIpMapper;
 import com.ba.ipmanage.mapper.ProxyIpMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,11 +23,22 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class CrawlService {
 
     private static final Logger log = LoggerFactory.getLogger(CrawlService.class);
+
+    private static final String[] USER_AGENTS = {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
+    };
+
+    private static final Random RANDOM = new Random();
 
     @Autowired
     private CrawlSourceMapper crawlSourceMapper;
@@ -58,36 +72,169 @@ public class CrawlService {
     }
 
     private int crawlFromSource(CrawlSource source) {
-        String url = source.getSourceUrl();
         String parseRuleStr = source.getParseRule();
         if (parseRuleStr == null || parseRuleStr.isEmpty()) {
-            return crawlDefaultXicidaili(source.getSourceName(), url);
+            return 0;
         }
 
-        JSONObject parseRule = JSON.parseObject(parseRuleStr);
-        String type = parseRule.getString("type");
-
-        if ("html".equalsIgnoreCase(type)) {
-            return crawlHtmlSource(source.getSourceName(), url, parseRule);
+        JSONObject parseRule;
+        try {
+            parseRule = JSON.parseObject(parseRuleStr);
+        } catch (Exception e) {
+            log.warn("解析规则格式错误: {}", parseRuleStr);
+            return 0;
         }
 
-        return 0;
+        String type = parseRule.getString("type", "html");
+
+        switch (type.toLowerCase()) {
+            case "text":
+                return crawlTextSource(source.getSourceName(), source.getSourceUrl(), parseRule);
+            case "json":
+                return crawlJsonSource(source.getSourceName(), source.getSourceUrl(), parseRule);
+            case "html":
+            default:
+                return crawlHtmlSource(source.getSourceName(), source.getSourceUrl(), parseRule);
+        }
+    }
+
+    private int crawlTextSource(String sourceName, String url, JSONObject parseRule) {
+        int count = 0;
+        try {
+            String body = httpGet(url);
+            if (body == null || body.isEmpty()) {
+                return 0;
+            }
+
+            String lineSplit = parseRule.getString("lineSplit", "\n");
+            String ipPortSplit = parseRule.getString("ipPortSplit", ":");
+            String defaultProtocol = parseRule.getString("defaultProtocol", "http");
+
+            String[] lines = body.split(lineSplit);
+            for (String line : lines) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                String[] parts = line.split(ipPortSplit);
+                if (parts.length < 2) {
+                    continue;
+                }
+
+                String ip = parts[0].trim();
+                String portStr = parts[1].trim();
+
+                try {
+                    int port = Integer.parseInt(portStr);
+                    if (isValidIpPort(ip, port)) {
+                        boolean added = addPendingIp(ip, port, defaultProtocol, sourceName);
+                        if (added) {
+                            count++;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+            }
+        } catch (Exception e) {
+            log.error("爬取文本源失败: {}", url, e);
+        }
+        return count;
+    }
+
+    private int crawlJsonSource(String sourceName, String url, JSONObject parseRule) {
+        int count = 0;
+        try {
+            String body = httpGet(url);
+            if (body == null || body.isEmpty()) {
+                return 0;
+            }
+
+            JSONObject json = JSON.parseObject(body);
+            String listPath = parseRule.getString("listPath", "data");
+            String ipField = parseRule.getString("ipField", "ip");
+            String portField = parseRule.getString("portField", "port");
+            String protocolField = parseRule.getString("protocolField", "protocol");
+            String defaultProtocol = parseRule.getString("defaultProtocol", "http");
+
+            JSONArray list = getNestedJsonArray(json, listPath);
+            if (list == null || list.isEmpty()) {
+                return 0;
+            }
+
+            for (int i = 0; i < list.size(); i++) {
+                try {
+                    JSONObject item = list.getJSONObject(i);
+                    if (item == null) continue;
+
+                    String ip = item.getString(ipField);
+                    String portStr = item.getString(portField);
+                    if (ip == null || portStr == null) continue;
+
+                    int port = Integer.parseInt(portStr.trim());
+                    String protocol = protocolField != null ?
+                            item.getString(protocolField) : defaultProtocol;
+                    if (protocol == null) protocol = defaultProtocol;
+
+                    if (isValidIpPort(ip.trim(), port)) {
+                        boolean added = addPendingIp(ip.trim(), port, protocol.toLowerCase(), sourceName);
+                        if (added) {
+                            count++;
+                        }
+                    }
+                } catch (Exception e) {
+                    continue;
+                }
+            }
+        } catch (Exception e) {
+            log.error("爬取JSON源失败: {}", url, e);
+        }
+        return count;
+    }
+
+    private JSONArray getNestedJsonArray(JSONObject json, String path) {
+        if (path == null || path.isEmpty()) {
+            return json.getJSONArray("data");
+        }
+        String[] keys = path.split("\\.");
+        Object current = json;
+        for (String key : keys) {
+            if (current instanceof JSONObject) {
+                current = ((JSONObject) current).get(key);
+            } else if (current instanceof JSONArray) {
+                return (JSONArray) current;
+            } else {
+                return null;
+            }
+        }
+        if (current instanceof JSONArray) {
+            return (JSONArray) current;
+        }
+        return null;
     }
 
     private int crawlHtmlSource(String sourceName, String url, JSONObject parseRule) {
         int count = 0;
         try {
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                    .timeout(10000)
-                    .get();
+            String html = httpGet(url);
+            if (html == null || html.isEmpty()) {
+                return 0;
+            }
 
-            String ipSelector = parseRule.getString("ipSelector");
-            String portSelector = parseRule.getString("portSelector");
+            Document doc = Jsoup.parse(html);
+
+            String tableSelector = parseRule.getString("tableSelector", "tr");
+            String ipSelector = parseRule.getString("ipSelector", "td:nth-child(1)");
+            String portSelector = parseRule.getString("portSelector", "td:nth-child(2)");
             String protocolSelector = parseRule.getString("protocolSelector");
+            boolean skipHeader = parseRule.getBooleanValue("skipHeader");
 
-            Elements rows = doc.select("tr");
-            for (Element row : rows) {
+            Elements rows = doc.select(tableSelector);
+            int startIndex = skipHeader ? 1 : 0;
+
+            for (int i = startIndex; i < rows.size(); i++) {
+                Element row = rows.get(i);
                 try {
                     Element ipEl = row.selectFirst(ipSelector);
                     Element portEl = row.selectFirst(portSelector);
@@ -132,40 +279,32 @@ public class CrawlService {
         return count;
     }
 
-    private int crawlDefaultXicidaili(String sourceName, String url) {
-        int count = 0;
+    private String httpGet(String url) {
         try {
-            Document doc = Jsoup.connect(url)
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                    .timeout(10000)
-                    .get();
+            HttpResponse response = HttpRequest.get(url)
+                    .header("User-Agent", getRandomUserAgent())
+                    .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                    .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+                    .header("Accept-Encoding", "gzip, deflate")
+                    .header("Connection", "keep-alive")
+                    .header("Upgrade-Insecure-Requests", "1")
+                    .timeout(15000)
+                    .execute();
 
-            Elements rows = doc.select("#ip_list tr");
-            for (int i = 1; i < rows.size(); i++) {
-                Element row = rows.get(i);
-                Elements tds = row.select("td");
-                if (tds.size() < 3) continue;
-
-                String ip = tds.get(1).text().trim();
-                String portStr = tds.get(2).text().trim();
-
-                try {
-                    int port = Integer.parseInt(portStr);
-                    if (isValidIpPort(ip, port)) {
-                        String protocol = tds.size() > 5 ? tds.get(5).text().trim().toLowerCase() : "http";
-                        boolean added = addPendingIp(ip, port, protocol, sourceName);
-                        if (added) {
-                            count++;
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    continue;
-                }
+            if (!response.isOk()) {
+                log.debug("HTTP请求失败: {} - {}", url, response.getStatus());
+                return null;
             }
+
+            return response.body();
         } catch (Exception e) {
-            log.error("爬取西刺代理失败", e);
+            log.debug("HTTP请求异常: {} - {}", url, e.getMessage());
+            return null;
         }
-        return count;
+    }
+
+    private String getRandomUserAgent() {
+        return USER_AGENTS[RANDOM.nextInt(USER_AGENTS.length)];
     }
 
     private boolean isValidIpPort(String ip, int port) {

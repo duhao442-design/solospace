@@ -177,5 +177,10 @@ INSERT INTO ip_location_api (api_name, api_url, request_method, request_params, 
 ('免费IP查询', 'https://api.vore.top/api/IPdata', 'GET', '{"ip":"{ip}"}', NULL, 'ipinfo.location', 'ipinfo.gj', 'ipinfo.province', 'ipinfo.city', 0, 0, 3);
 
 INSERT INTO crawl_source (source_name, source_url, parse_rule, status, crawl_interval) VALUES
-('西刺代理', 'https://www.xicidaili.com/nn/', '{"type":"html","ipSelector":"td:nth-child(2)","portSelector":"td:nth-child(3)","protocolSelector":"td:nth-child(6)"}', 1, 3600),
-('快代理', 'https://www.kuaidaili.com/free/inha/', '{"type":"html","ipSelector":"td[data-title=IP]","portSelector":"td[data-title=PORT]","protocolSelector":"td[data-title=类型]"}', 1, 3600);
+('西刺代理', 'https://www.xicidaili.com/nn/', '{"type":"html","tableSelector":"#ip_list tr","ipSelector":"td:nth-child(2)","portSelector":"td:nth-child(3)","protocolSelector":"td:nth-child(6)","skipHeader":true}', 0, 3600),
+('快代理', 'https://www.kuaidaili.com/free/inha/', '{"type":"html","tableSelector":"tbody tr","ipSelector":"td[data-title=IP]","portSelector":"td[data-title=PORT]","protocolSelector":"td[data-title=类型]"}', 0, 3600),
+('站大爷高匿', 'https://www.zdaye.com/dayProxy/1.html', '{"type":"html","tableSelector":".table tr","ipSelector":"td:nth-child(1)","portSelector":"td:nth-child(2)","protocolSelector":"td:nth-child(4)","skipHeader":true}', 1, 3600),
+('66IP高匿', 'http://www.66ip.cn/nmtq.php?getnum=50&isp=0&anonymoustype=3&start=&ports=&export=&ipaddress=&area=0&proxytype=2&api=66ip', '{"type":"text","lineSplit":"\\n","ipPortSplit":":","defaultProtocol":"http"}', 1, 3600),
+('ProxyScrape', 'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all', '{"type":"text","lineSplit":"\\n","ipPortSplit":":","defaultProtocol":"http"}', 1, 1800),
+('ProxyListDownload', 'https://www.proxy-list.download/api/v1/get?type=http&anon=elite', '{"type":"text","lineSplit":"\\r\\n","ipPortSplit":":","defaultProtocol":"http"}', 1, 1800),
+('OpenProxyList', 'https://api.openproxylist.xyz/http.txt', '{"type":"text","lineSplit":"\\n","ipPortSplit":":","defaultProtocol":"http"}', 1, 1800);
