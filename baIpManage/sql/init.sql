@@ -170,7 +170,11 @@ INSERT INTO system_config (config_key, config_value, description) VALUES
 
 INSERT INTO ip_location_api (api_name, api_url, request_method, request_params, response_parse_path, location_field, country_field, province_field, city_field, daily_quota, status, priority) VALUES
 ('ip-api.com', 'http://ip-api.com/json/{ip}', 'GET', NULL, NULL, 'country,city', 'country', 'regionName', 'city', 45, 1, 10),
-('ipinfo.io', 'https://ipinfo.io/{ip}/json', 'GET', NULL, NULL, 'country,region,city', 'country', 'region', 'city', 1000, 1, 5);
+('ipinfo.io', 'https://ipinfo.io/{ip}/json', 'GET', NULL, NULL, 'country,region,city', 'country', 'region', 'city', 50000, 0, 5),
+('太平洋电脑网', 'http://whois.pconline.com.cn/ipJson.jsp', 'GET', '{"ip":"{ip}","json":"true"}', NULL, 'addr', 'country', 'pro', 'city', 0, 1, 20),
+('百度开放平台', 'https://opendata.baidu.com/api.php', 'GET', '{"query":"{ip}","co":"","resource_id":"6006","oe":"utf8"}', NULL, 'location', NULL, NULL, NULL, 0, 0, 15),
+('ip-api.cn', 'http://ip-api.cn/api/{ip}', 'GET', NULL, NULL, 'address', 'country', 'province', 'city', 0, 0, 8),
+('免费IP查询', 'https://api.vore.top/api/IPdata', 'GET', '{"ip":"{ip}"}', NULL, 'ipinfo.location', 'ipinfo.gj', 'ipinfo.province', 'ipinfo.city', 0, 0, 3);
 
 INSERT INTO crawl_source (source_name, source_url, parse_rule, status, crawl_interval) VALUES
 ('西刺代理', 'https://www.xicidaili.com/nn/', '{"type":"html","ipSelector":"td:nth-child(2)","portSelector":"td:nth-child(3)","protocolSelector":"td:nth-child(6)"}', 1, 3600),
